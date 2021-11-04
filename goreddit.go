@@ -24,7 +24,7 @@ type Comment struct {
 }
 
 type ThreadStore interface {
-	Thread(id uuid.UUID) (Thread error)
+	Thread(id uuid.UUID) (Thread, error)
 	Threads() ([]Thread, error)
 	CreateThread(t *Thread) error
 	UpdateThread(t *Thread) error
@@ -32,7 +32,7 @@ type ThreadStore interface {
 }
 
 type PostStore interface {
-	Post(id uuid.UUID) (Post error)
+	Post(id uuid.UUID) (Post, error)
 	PostsByThread(threadID uuid.UUID) ([]Post, error)
 	CreatePost(t *Post) error
 	UpdatePost(t *Post) error
@@ -40,9 +40,15 @@ type PostStore interface {
 }
 
 type CommentStore interface {
-	Comment(id uuid.UUID) (Comment error)
+	Comment(id uuid.UUID) (Comment, error)
 	CommentsByPost(postID uuid.UUID) ([]Comment, error)
 	CreateComment(t *Comment) error
 	UpdateComment(t *Comment) error
 	DeleteComment(id uuid.UUID) error
+}
+
+type Store interface {
+	ThreadStore
+	PostStore
+	CommentStore
 }
