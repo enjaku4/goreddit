@@ -1,4 +1,4 @@
-.PHONY: postgres adminer migrate
+.PHONY: postgres migrate rollback
 
 postgres:
 	docker run --rm -ti -p 5432:5432 -e POSTGRES_PASSWORD=secret postgres:12
