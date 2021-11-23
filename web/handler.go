@@ -29,7 +29,10 @@ func NewHandler(store goreddit.Store) *Handler {
 		r.Get("/{id}/new", h.PostsCreate())
 		r.Post("/{id}", h.PostsStore())
 		r.Get("/{threadID}/{postID}", h.PostsShow())
+		r.Post("/{threadID}/{postID}", h.CommentsStore())
 	})
+
+	h.Get("/comments/{id}/vote", h.CommentsVote())
 
 	return h
 }
@@ -180,8 +183,9 @@ func (h *Handler) PostsCreate() http.HandlerFunc {
 
 func (h *Handler) PostsShow() http.HandlerFunc {
 	type data struct {
-		Thread goreddit.Thread
-		Post   goreddit.Post
+		Thread   goreddit.Thread
+		Post     goreddit.Post
+		Comments []goreddit.Comment
 	}
 
 	tmpl := template.Must(template.ParseFiles("templates/layout.html", "templates/post.html"))
@@ -211,6 +215,13 @@ func (h *Handler) PostsShow() http.HandlerFunc {
 			return
 		}
 
+		cc, err := h.store.CommentsByPost(p.ID)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
 		t, err := h.store.Thread(threadID)
 
 		if err != nil {
@@ -218,7 +229,7 @@ func (h *Handler) PostsShow() http.HandlerFunc {
 			return
 		}
 
-		tmpl.Execute(w, data{Thread: t, Post: p})
+		tmpl.Execute(w, data{Thread: t, Post: p, Comments: cc})
 	}
 }
 
@@ -256,5 +267,66 @@ func (h *Handler) PostsStore() http.HandlerFunc {
 		}
 
 		http.Redirect(w, r, "/threads/"+t.ID.String()+"/"+p.ID.String(), http.StatusFound)
+	}
+}
+
+func (h *Handler) CommentsStore() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		content := r.FormValue("content")
+
+		idStr := chi.URLParam(r, "postID")
+
+		id, err := uuid.Parse(idStr)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		if err := h.store.CreateComment(&goreddit.Comment{
+			ID:      uuid.New(),
+			PostID:  id,
+			Content: content,
+		}); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, r.Referer(), http.StatusFound)
+	}
+}
+
+func (h *Handler) CommentsVote() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		idStr := chi.URLParam(r, "id")
+
+		id, err := uuid.Parse(idStr)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		c, err := h.store.Comment(id)
+
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusNotFound)
+			return
+		}
+
+		dir := r.URL.Query().Get("dir")
+
+		if dir == "up" {
+			c.Votes++
+		} else if dir == "down" {
+			c.Votes--
+		}
+
+		if err := h.store.UpdateComment(&c); err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		http.Redirect(w, r, r.Referer(), http.StatusFound)
 	}
 }
