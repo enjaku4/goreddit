@@ -41,7 +41,7 @@ func (s *PostStore) CreatePost(p *goreddit.Post) error {
 }
 
 func (s *PostStore) UpdatePost(p *goreddit.Post) error {
-	if err := s.Get(p, `UPDATE posts SET thread_id = $1, title = $2, content = $3, votes = $4 WHERE id = $5) RETURNING *`, p.ThreadID, p.Title, p.Content, p.Votes, p.ID); err != nil {
+	if err := s.Get(p, `UPDATE posts SET thread_id = $1, title = $2, content = $3, votes = $4 WHERE id = $5 RETURNING *`, p.ThreadID, p.Title, p.Content, p.Votes, p.ID); err != nil {
 		return fmt.Errorf("error updating post: %w", err)
 	}
 

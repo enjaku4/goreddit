@@ -41,7 +41,7 @@ func (s *ThreadStore) CreateThread(t *goreddit.Thread) error {
 }
 
 func (s *ThreadStore) UpdateThread(t *goreddit.Thread) error {
-	if err := s.Get(t, `UPDATE threads SET title = $1, description = $2 WHERE id = $3) RETURNING *`, t.Title, t.Description, t.ID); err != nil {
+	if err := s.Get(t, `UPDATE threads SET title = $1, description = $2 WHERE id = $3 RETURNING *`, t.Title, t.Description, t.ID); err != nil {
 		return fmt.Errorf("error updating thread: %w", err)
 	}
 
