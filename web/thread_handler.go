@@ -7,6 +7,7 @@ import (
 	"github.com/enjaku4/goreddit"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/gorilla/csrf"
 )
 
 type ThreadHandler struct {
@@ -33,10 +34,16 @@ func (h *ThreadHandler) List() http.HandlerFunc {
 }
 
 func (h *ThreadHandler) Create() http.HandlerFunc {
+	type data struct {
+		CSRF template.HTML
+	}
+
 	tmpl := template.Must(template.ParseFiles("templates/layout.html", "templates/thread_create.html"))
 
 	return func(w http.ResponseWriter, r *http.Request) {
-		tmpl.Execute(w, nil)
+		tmpl.Execute(w, data{
+			CSRF: csrf.TemplateField(r),
+		})
 	}
 }
 
@@ -44,6 +51,7 @@ func (h *ThreadHandler) Show() http.HandlerFunc {
 	type data struct {
 		Thread goreddit.Thread
 		Posts  []goreddit.Post
+		CSRF   template.HTML
 	}
 
 	tmpl := template.Must(template.ParseFiles("templates/layout.html", "templates/thread.html"))
@@ -71,7 +79,11 @@ func (h *ThreadHandler) Show() http.HandlerFunc {
 			return
 		}
 
-		tmpl.Execute(w, data{Thread: t, Posts: pp})
+		tmpl.Execute(w, data{
+			Thread: t,
+			Posts:  pp,
+			CSRF:   csrf.TemplateField(r),
+		})
 	}
 }
 
