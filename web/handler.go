@@ -4,24 +4,27 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/enjaku4/goreddit"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/gorilla/csrf"
 )
 
-func NewHandler(store goreddit.Store, csrfKey []byte) *Handler {
+func NewHandler(store goreddit.Store, sessions *scs.SessionManager, csrfKey []byte) *Handler {
 	h := &Handler{
-		Mux:   chi.NewMux(),
-		store: store,
+		Mux:      chi.NewMux(),
+		store:    store,
+		sessions: sessions,
 	}
 
-	threads := ThreadHandler{store: store}
-	posts := PostHandler{store: store}
-	comments := CommentHandler{store: store}
+	threads := ThreadHandler{store: store, sessions: sessions}
+	posts := PostHandler{store: store, sessions: sessions}
+	comments := CommentHandler{store: store, sessions: sessions}
 
 	h.Use(middleware.Logger)
 	h.Use(csrf.Protect(csrfKey, csrf.Secure(false)))
+	h.Use(sessions.LoadAndSave)
 
 	h.Get("/", h.Home())
 
@@ -45,8 +48,8 @@ func NewHandler(store goreddit.Store, csrfKey []byte) *Handler {
 
 type Handler struct {
 	*chi.Mux
-
-	store goreddit.Store
+	store    goreddit.Store
+	sessions *scs.SessionManager
 }
 
 func (h *Handler) Home() http.HandlerFunc {

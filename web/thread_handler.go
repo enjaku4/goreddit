@@ -4,6 +4,7 @@ import (
 	"html/template"
 	"net/http"
 
+	"github.com/alexedwards/scs/v2"
 	"github.com/enjaku4/goreddit"
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
@@ -11,7 +12,8 @@ import (
 )
 
 type ThreadHandler struct {
-	store goreddit.Store
+	store    goreddit.Store
+	sessions *scs.SessionManager
 }
 
 func (h *ThreadHandler) List() http.HandlerFunc {
