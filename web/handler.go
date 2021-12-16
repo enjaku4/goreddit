@@ -54,6 +54,7 @@ type Handler struct {
 
 func (h *Handler) Home() http.HandlerFunc {
 	type data struct {
+		SessionData
 		Posts []goreddit.Post
 	}
 
@@ -67,6 +68,9 @@ func (h *Handler) Home() http.HandlerFunc {
 			return
 		}
 
-		tmpl.Execute(w, data{Posts: pp})
+		tmpl.Execute(w, data{
+			SessionData: GetSessiondata(h.sessions, r.Context()),
+			Posts:       pp,
+		})
 	}
 }

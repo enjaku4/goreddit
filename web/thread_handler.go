@@ -18,6 +18,7 @@ type ThreadHandler struct {
 
 func (h *ThreadHandler) List() http.HandlerFunc {
 	type data struct {
+		SessionData
 		Threads []goreddit.Thread
 	}
 
@@ -31,12 +32,16 @@ func (h *ThreadHandler) List() http.HandlerFunc {
 			return
 		}
 
-		tmpl.Execute(w, data{Threads: tt})
+		tmpl.Execute(w, data{
+			SessionData: GetSessiondata(h.sessions, r.Context()),
+			Threads:     tt,
+		})
 	}
 }
 
 func (h *ThreadHandler) Create() http.HandlerFunc {
 	type data struct {
+		SessionData
 		CSRF template.HTML
 	}
 
@@ -51,6 +56,7 @@ func (h *ThreadHandler) Create() http.HandlerFunc {
 
 func (h *ThreadHandler) Show() http.HandlerFunc {
 	type data struct {
+		SessionData
 		Thread goreddit.Thread
 		Posts  []goreddit.Post
 		CSRF   template.HTML
@@ -105,6 +111,8 @@ func (h *ThreadHandler) Store() http.HandlerFunc {
 			return
 		}
 
+		h.sessions.Put(r.Context(), "flash", "Your new thread has been created.")
+
 		http.Redirect(w, r, "/threads", http.StatusFound)
 	}
 }
@@ -124,6 +132,8 @@ func (h *ThreadHandler) Delete() http.HandlerFunc {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		h.sessions.Put(r.Context(), "flash", "The thread has been deleted.")
 
 		http.Redirect(w, r, "/threads", http.StatusFound)
 	}
