@@ -112,8 +112,16 @@ func (h *PostHandler) Show() http.HandlerFunc {
 
 func (h *PostHandler) Store() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		title := r.FormValue("title")
-		content := r.FormValue("content")
+		form := CreatePostForm{
+			Title:   r.FormValue("title"),
+			Content: r.FormValue("content"),
+		}
+
+		if !form.Validate() {
+			h.sessions.Put(r.Context(), "form", form)
+			http.Redirect(w, r, r.Referer(), http.StatusFound)
+			return
+		}
 
 		idStr := chi.URLParam(r, "id")
 
@@ -133,9 +141,9 @@ func (h *PostHandler) Store() http.HandlerFunc {
 
 		p := &goreddit.Post{
 			ID:       uuid.New(),
-			Title:    title,
+			Title:    form.Title,
 			ThreadID: t.ID,
-			Content:  content,
+			Content:  form.Content,
 		}
 
 		if err := h.store.CreatePost(p); err != nil {
