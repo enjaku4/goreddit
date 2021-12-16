@@ -9,7 +9,7 @@ import (
 )
 
 func main() {
-	dsn := "postgres://postgres:secret@localhost/postgres?sslmode=disable"
+	dsn := "postgres://postgres:secret@localhost:5433/postgres?sslmode=disable"
 
 	store, err := postgres.NewStore(dsn)
 
