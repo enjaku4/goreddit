@@ -1,6 +1,7 @@
 package web
 
 import (
+	"context"
 	"html/template"
 	"net/http"
 
@@ -8,6 +9,7 @@ import (
 	"github.com/enjaku4/goreddit"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/google/uuid"
 	"github.com/gorilla/csrf"
 )
 
@@ -26,6 +28,7 @@ func NewHandler(store goreddit.Store, sessions *scs.SessionManager, csrfKey []by
 	h.Use(middleware.Logger)
 	h.Use(csrf.Protect(csrfKey, csrf.Secure(false)))
 	h.Use(sessions.LoadAndSave)
+	h.Use(h.withUser)
 
 	h.Get("/", h.Home())
 
@@ -45,6 +48,9 @@ func NewHandler(store goreddit.Store, sessions *scs.SessionManager, csrfKey []by
 	h.Get("/comments/{id}/vote", comments.Vote())
 	h.Get("/register", users.Register())
 	h.Post("/register", users.RegisterSubmit())
+	h.Get("/login", users.Login())
+	h.Post("/login", users.LoginSubmit())
+	h.Get("/logout", users.Logout())
 
 	return h
 }
@@ -76,4 +82,21 @@ func (h *Handler) Home() http.HandlerFunc {
 			Posts:       pp,
 		})
 	}
+}
+
+func (h *Handler) withUser(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id, _ := h.sessions.Get(r.Context(), "user_id").(uuid.UUID)
+
+		user, err := h.store.User(id)
+
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), "user", user)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
 }

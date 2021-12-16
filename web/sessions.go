@@ -3,10 +3,17 @@ package web
 import (
 	"context"
 	"database/sql"
+	"encoding/gob"
 
 	"github.com/alexedwards/scs/postgresstore"
 	"github.com/alexedwards/scs/v2"
+	"github.com/enjaku4/goreddit"
+	"github.com/google/uuid"
 )
+
+func init() {
+	gob.Register(uuid.UUID{})
+}
 
 func NewSessionManager(dataSourceName string) (*scs.SessionManager, error) {
 	db, err := sql.Open("postgres", dataSourceName)
@@ -24,10 +31,14 @@ func NewSessionManager(dataSourceName string) (*scs.SessionManager, error) {
 type SessionData struct {
 	FlashMessage string
 	Form         interface{}
+	User         goreddit.User
+	LoggedIn     bool
 }
 
 func GetSessiondata(session *scs.SessionManager, ctx context.Context) SessionData {
 	var data SessionData
+
+	data.User, data.LoggedIn = ctx.Value("user").(goreddit.User)
 
 	data.FlashMessage = session.PopString(ctx, "flash")
 	data.Form = session.Pop(ctx, "form")
