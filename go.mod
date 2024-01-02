@@ -10,7 +10,7 @@ require (
 	github.com/gorilla/csrf v1.7.1
 	github.com/jmoiron/sqlx v1.3.4
 	github.com/lib/pq v1.10.3
-	golang.org/x/crypto v0.1.0
+	golang.org/x/crypto v0.17.0
 )
 
 require (
